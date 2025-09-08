@@ -1,0 +1,715 @@
+{
+  "datasets": [
+    {
+      "name": "0102d04e",
+      "displayName": "New Query 2025-09-03 1:04am",
+      "queryLines": [
+        "SELECT * FROM goldenhouseprices_info_view;\r\n"
+      ],
+      "catalog": "workspace",
+      "schema": "homepricesprojectdatawarehouse"
+    },
+    {
+      "name": "0198f05e",
+      "displayName": "New Query 2025-09-03 1:04am (Forecasted)",
+      "queryLines": [
+        "USE CATALOG `workspace`;\n",
+        "USE SCHEMA `houses_pricing`;\n",
+        "\n",
+        "WITH original_table AS (\n",
+        "    SELECT \n",
+        "  DATE_TRUNC(\"MONTH\", `Date_Sold`) AS Date_Sold,\n",
+        "  SUM(`Price`) AS Price\n",
+        "FROM (\n",
+        "    SELECT\n",
+        "  datesold AS Date_Sold,\n",
+        "  TRIM(postcode) AS Region_Postcode,\n",
+        "  TRIM(propertyType) AS Property_Type,\n",
+        "  bedrooms AS Number_Of_Bedrooms,\n",
+        "  price As Price,\n",
+        "  YEAR(Date_Sold) As Year_DATE,\n",
+        "  month(Date_Sold) AS Month_Name,\n",
+        "  weekday(Date_Sold) AS Day_Name,\n",
+        "  price / NULLIF(bedrooms, 0) As Average_Price_per_Bedroom\n",
+        "from\n",
+        "  raw_data\n",
+        ") GROUP BY 1\n",
+        "  ),\n",
+        "  dates AS (\n",
+        "    SELECT \n",
+        "      MAX(Date_Sold) AS max_date_column,\n",
+        "      MIN(Date_Sold) AS min_date_column,\n",
+        "      MAX_BY(Price, Date_Sold) AS Price\n",
+        "    FROM original_table\n",
+        "  ),\n",
+        "  forecast_table AS (\n",
+        "    SELECT \n",
+        "      Date_Sold,\n",
+        "      Price_forecast,\n",
+        "      Price_upper,\n",
+        "      Price_lower,\n",
+        "      NULL AS Price\n",
+        "    FROM AI_FORECAST(\n",
+        "      TABLE(original_table),\n",
+        "      horizon => (\n",
+        "        SELECT\n",
+        "          max_date_column + MAKE_DT_INTERVAL(CAST(FLOOR(DATEDIFF(max_date_column, min_date_column) * 0.5) AS INT), 0, 0, 0)\n",
+        "        FROM dates\n",
+        "      ),\n",
+        "      time_col => 'Date_Sold',\n",
+        "      value_col => 'Price'\n",
+        "    )\n",
+        "  )\n",
+        "\n",
+        "  SELECT * FROM forecast_table\n",
+        "  UNION ALL\n",
+        "  SELECT\n",
+        "    Date_Sold,\n",
+        "    NULL AS Price_forecast,\n",
+        "    NULL AS Price_upper,\n",
+        "    NULL AS Price_lower,\n",
+        "    Price\n",
+        "  FROM original_table\n",
+        "    WHERE Date_Sold < (SELECT max_date_column FROM dates)\n",
+        "  UNION ALL\n",
+        "  SELECT\n",
+        "    max_date_column AS Date_Sold,\n",
+        "    Price AS Price_forecast,\n",
+        "    Price AS Price_upper,\n",
+        "    Price AS Price_lower,\n",
+        "    Price\n",
+        "  FROM\n",
+        "    dates"
+      ],
+      "catalog": "workspace",
+      "schema": "houses_pricing"
+    }
+  ],
+  "pages": [
+    {
+      "name": "56a3c2fa",
+      "displayName": "Untitled Page",
+      "layout": [
+        {
+          "widget": {
+            "name": "9f50e16a",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "Number_Of_Bedrooms",
+                      "expression": "`Number_Of_Bedrooms`"
+                    },
+                    {
+                      "name": "count(Number_Of_Bedrooms)",
+                      "expression": "COUNT(`Number_Of_Bedrooms`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Number_Of_Bedrooms",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Number_Of_Bedrooms"
+                },
+                "y": {
+                  "fieldName": "count(Number_Of_Bedrooms)",
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false
+                  },
+                  "displayName": "Count of Number_Of_Bedrooms"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b65e0022",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "price",
+                      "expression": "`price`"
+                    },
+                    {
+                      "name": "count(price)",
+                      "expression": "COUNT(`price`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "price",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "price"
+                },
+                "y": {
+                  "fieldName": "count(price)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of price"
+                }
+              },
+              "frame": {
+                "title": "Price Distribution",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "82ca02d5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "Property_Type",
+                      "expression": "`Property_Type`"
+                    },
+                    {
+                      "name": "count(Property_Type)",
+                      "expression": "COUNT(`Property_Type`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Property_Type",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Property_Type"
+                },
+                "y": {
+                  "fieldName": "count(Property_Type)",
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false
+                  },
+                  "displayName": "Count of Property_Type"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 7,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "01115d11",
+            "multilineTextboxSpec": {
+              "lines": [
+                "                                                                                                                                                 \n",
+                "Features Distribution"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "af1bbb1e",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "Region_Postcode",
+                      "expression": "`Region_Postcode`"
+                    },
+                    {
+                      "name": "count(Region_Postcode)",
+                      "expression": "COUNT(`Region_Postcode`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Region_Postcode",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Region_Postcode"
+                },
+                "y": {
+                  "fieldName": "count(Region_Postcode)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Region_Postcode"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "6666c6ca",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "count(Year_DATE)",
+                      "expression": "COUNT(`Year_DATE`)"
+                    },
+                    {
+                      "name": "Year_DATE",
+                      "expression": "`Year_DATE`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "count(Year_DATE)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Year_DATE"
+                },
+                "y": {
+                  "fieldName": "Year_DATE",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Year_DATE"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 19,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "837fbd30",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "count(Year_DATE)",
+                      "expression": "COUNT(`Year_DATE`)"
+                    },
+                    {
+                      "name": "Year_DATE",
+                      "expression": "`Year_DATE`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "count(Year_DATE)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Year_DATE"
+                },
+                "color": {
+                  "fieldName": "Year_DATE",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Year_DATE"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "eb797ce6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "count(Month_Name)",
+                      "expression": "COUNT(`Month_Name`)"
+                    },
+                    {
+                      "name": "Month_Name",
+                      "expression": "`Month_Name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "count(Month_Name)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Month_Name"
+                },
+                "y": {
+                  "fieldName": "Month_Name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Month_Name"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 25,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "401ae228",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "count(Month_Name)",
+                      "expression": "COUNT(`Month_Name`)"
+                    },
+                    {
+                      "name": "Month_Name",
+                      "expression": "`Month_Name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "count(Month_Name)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Month_Name"
+                },
+                "color": {
+                  "fieldName": "Month_Name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Month_Name"
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "16ea9f50",
+      "displayName": "Untitled page",
+      "layout": [
+        {
+          "widget": {
+            "name": "38f632f4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "Date_Sold",
+                      "expression": "`Date_Sold`"
+                    },
+                    {
+                      "name": "price",
+                      "expression": "`price`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "Date_Sold",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date_Sold"
+                },
+                "y": {
+                  "fieldName": "price",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "price"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "6e433860",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "monthly(Date_Sold)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `Date_Sold`)"
+                    },
+                    {
+                      "name": "sum(price)",
+                      "expression": "SUM(`price`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(Date_Sold)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date_Sold"
+                },
+                "y": {
+                  "fieldName": "sum(price)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Sum of price"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "fb39d26f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0102d04e",
+                  "fields": [
+                    {
+                      "name": "monthly(Date_Sold)",
+                      "expression": "DATE_TRUNC(\"MONTH\", `Date_Sold`)"
+                    },
+                    {
+                      "name": "avg(price)",
+                      "expression": "AVG(`price`)"
+                    },
+                    {
+                      "name": "median(price)",
+                      "expression": "MEDIAN(`price`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "monthly(Date_Sold)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date_Sold"
+                },
+                "y": {
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "fields": [
+                    {
+                      "fieldName": "avg(price)",
+                      "displayName": "Average price"
+                    },
+                    {
+                      "fieldName": "median(price)",
+                      "displayName": "Median of price"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    }
+  }
+}
