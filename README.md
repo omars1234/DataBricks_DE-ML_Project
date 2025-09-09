@@ -34,3 +34,6 @@
 *As we are using Databricks Community verion we will use Pyspark in reading the data and do some necessery data cleaning, then will switch into Pandas and Sklearn since the Databricks Community verion doesnt support Some Pyspark features for ML like SringIndexer and VectorAssembler.*
 
 *Then wil use MLflow to track models and find the best one.*
+
+
+![logo](docs/HousePrices.drawio.png)
