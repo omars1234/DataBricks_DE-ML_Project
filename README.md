@@ -24,3 +24,13 @@
 *C. Silver Layer: This layer includes data cleansing,feature engeneering and data transformation.*
 
 *D. Gold Layer: The Final data -In View Table- Ready for reporting ,analytics and Machine Laerning.*
+
+----------
+
+*Machine Leraning Architecture :*
+
+*In this section we will use python programming langauge and specificly Pyspark,Pandas,Sklearn.*
+
+*As we are using Databricks Community verion we will use Pyspark in reading the data and do some necessery data cleaning, then will switch into Pandas and Sklearn since the Databricks Community verion doesnt support Some Pyspark features for ML like SringIndexer and VectorAssembler.*
+
+*Then wil use MLflow to track models and find the best one.*
