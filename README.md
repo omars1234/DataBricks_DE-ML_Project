@@ -36,4 +36,4 @@
 *Then wil use MLflow to track models and find the best one.*
 
 
-![logo](docs/HousePrices.drawio.png)
+![logo](DataBricks_DE_ML_Project1.png)
