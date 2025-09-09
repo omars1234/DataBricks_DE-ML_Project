@@ -49,3 +49,16 @@
 
 
 ![logo](DataBricks_DE_ML_Project2.png)
+
+
+
+## *Feedback*
+
+*If you have any feedback, please reach out to us at omars.soub@gmail.com*
+
+## 🔗 Links
+
+[*my github page-https://github.com/omars1234*](https://github.com/omars1234)
+
+## *🛠 Skills*
+*python, R, SQL ,PowerBi ,Tableaue*
