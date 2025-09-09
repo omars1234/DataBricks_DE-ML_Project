@@ -35,5 +35,17 @@
 
 *Then wil use MLflow to track models and find the best one.*
 
+----------
+
+*Data Engeneer Diagram :*
+
+
+![logo](DataBricks_DE_ML_Project1.png)
+
+
+----------
+
+*Machine Leraning Diagram :*
+
 
 ![logo](DataBricks_DE_ML_Project1.png)
